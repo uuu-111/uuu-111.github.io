@@ -1,0 +1,174 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>傻球球笨多乐的相册</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+      body {
+    /* 使用你的图片 */
+    background-image: url('1.png');
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-family: 'Arial', sans-serif;
+    position: relative;
+    overflow: hidden;
+}
+
+        /* 雪花容器 */
+        #snow-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        /* 雪花样式 */
+        .snow {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: white;
+            border-radius: 50%;
+            filter: blur(1px);
+            animation: fall linear infinite;
+        }
+
+        @keyframes fall {
+            to {
+                transform: translateY(100vh);
+            }
+        }
+
+        .login-container {
+            background: rgba(255, 255, 255, 0.85);
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            backdrop-filter: blur(8px);
+            width: 400px;
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+        }
+
+        h1 {
+            color: #ff69b4;
+            font-size: 36px;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #ffb6c1;
+            border-radius: 25px;
+            font-size: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            transition: all 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: #ff69b4;
+            box-shadow: 0 0 15px rgba(255, 105, 180, 0.3);
+        }
+
+        button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 25px;
+            background: linear-gradient(45deg, #ff69b4, #ff8da1);
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px rgba(255, 105, 180, 0.4);
+        }
+    </style>
+</head>
+<body>
+    <!-- 雪花容器 -->
+    <div id="snow-container"></div>
+
+    <div class="login-container">
+        <h1>✨ 傻球球笨多乐 ✨</h1>
+        <form id="loginForm">
+            <div class="input-group">
+                <input type="text" id="username" placeholder="请输入账号" required>
+            </div>
+            <div class="input-group">
+                <input type="password" id="password" placeholder="请输入密码" required>
+            </div>
+            <button type="submit">进入相册</button>
+        </form>
+    </div>
+
+    <script>
+        // 创建雪花
+        function createSnow() {
+            const snowContainer = document.getElementById('snow-container');
+            const snow = document.createElement('div');
+            snow.className = 'snow';
+            
+            const startPositionX = Math.random() * window.innerWidth;
+            const size = Math.random() * 5 + 2;
+            const duration = Math.random() * 3 + 2;
+            
+            snow.style.left = startPositionX + 'px';
+            snow.style.width = size + 'px';
+            snow.style.height = size + 'px';
+            snow.style.opacity = Math.random() * 0.8 + 0.2;
+            snow.style.animationDuration = duration + 's';
+            
+            snowContainer.appendChild(snow);
+            
+            setTimeout(() => {
+                snow.remove();
+            }, duration * 1000);
+        }
+
+        setInterval(createSnow, 100);
+
+        // 登录处理
+        document.getElementById('loginForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if(username === 'qq' && password === '2qq') {
+                window.location.href = 'gallery.html';
+            } else {
+                alert('账号或密码错误！');
+            }
+        });
+    </script>
+</body>
+</html>
+```
