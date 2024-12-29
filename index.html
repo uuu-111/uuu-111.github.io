@@ -11,20 +11,16 @@
             box-sizing: border-box;
         }
 
-      body {
-    /* 使用你的图片 */
-    background-image: url('1.png');
+   body {
+    /* 修改这个部分 */
+    background: url('1.png') no-repeat center center fixed;
     background-size: cover;
-    background-position: center;
+    -webkit-background-size: cover; /* 为移动端添加 */
+    -moz-background-size: cover;
+    -o-background-size: cover;
     height: 100vh;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-family: 'Arial', sans-serif;
-    position: relative;
-    overflow: hidden;
+    /* 其他样式保持不变 */
 }
-
         /* 雪花容器 */
         #snow-container {
             position: fixed;
