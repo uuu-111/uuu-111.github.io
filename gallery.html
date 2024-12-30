@@ -51,11 +51,13 @@
             border-radius: 10px;
         }
 
-        #status {
-            text-align: center;
-            color: #ff69b4;
+        #debug {
+            background: #fff;
+            padding: 10px;
             margin: 10px 0;
-            font-weight: bold;
+            border-radius: 5px;
+            white-space: pre-wrap;
+            font-family: monospace;
         }
     </style>
 </head>
@@ -64,42 +66,25 @@
         <h1>✨ 傻球球笨多乐的相册 ✨</h1>
         <input type="file" id="fileInput" accept="image/*" style="display: none">
         <button id="uploadBtn">添加新照片</button>
-        <div id="status"></div>
     </div>
 
+    <div id="debug"></div>
     <div class="gallery" id="gallery"></div>
 
     <script>
         const API_KEY = '039303a80a219679c951ccf37548704f';
-        
-        // 显示状态消息
-        function showStatus(message) {
-            document.getElementById('status').textContent = message;
-        }
+        const debug = document.getElementById('debug');
 
-        // 添加照片到画廊
-        function addPhotoToGallery(imageUrl) {
-            const gallery = document.getElementById('gallery');
-            const photoCard = document.createElement('div');
-            photoCard.className = 'photo-card';
-            
-            const img = document.createElement('img');
-            img.src = imageUrl;
-            img.alt = '照片';
-            
-            photoCard.appendChild(img);
-            gallery.insertBefore(photoCard, gallery.firstChild);
-
-            // 保存照片URL到本地存储
-            const urls = JSON.parse(localStorage.getItem('photoUrls') || '[]');
-            urls.unshift(imageUrl);
-            localStorage.setItem('photoUrls', JSON.stringify(urls));
+        // 调试输出
+        function log(message, data) {
+            debug.innerHTML += `${message}\n${JSON.stringify(data, null, 2)}\n\n`;
+            console.log(message, data);
         }
 
         // 上传照片
         async function uploadPhoto(file) {
-            showStatus('正在上传...');
-            
+            log('开始上传文件:', { fileName: file.name, fileSize: file.size });
+
             const formData = new FormData();
             formData.append('image', file);
 
@@ -110,36 +95,79 @@
                 });
 
                 const data = await response.json();
-                console.log('Upload response:', data);
+                log('ImgBB 响应:', data);
 
                 if (data.success) {
-                    // 使用直接显示URL
-                    const imageUrl = data.data.display_url;
+                    // 获取所有可能的URL
+                    const urls = {
+                        display_url: data.data.display_url,
+                        url: data.data.url,
+                        image_url: data.data.image.url,
+                        thumb_url: data.data.thumb?.url
+                    };
+                    log('可用的图片URL:', urls);
+
+                    // 尝试使用第一个可用的URL
+                    const imageUrl = urls.display_url || urls.url || urls.image_url || urls.thumb_url;
+                    log('选择使用的URL:', imageUrl);
+
+                    // 添加到画廊
                     addPhotoToGallery(imageUrl);
-                    showStatus('上传成功！');
                 } else {
                     throw new Error('上传失败');
                 }
             } catch (error) {
-                console.error('Upload error:', error);
-                showStatus('上传失败，请重试');
+                log('上传错误:', error);
+                alert('上传失败，请查看调试信息');
+            }
+        }
+
+        // 添加照片到画廊
+        function addPhotoToGallery(imageUrl) {
+            log('添加照片到画廊:', imageUrl);
+
+            const gallery = document.getElementById('gallery');
+            const photoCard = document.createElement('div');
+            photoCard.className = 'photo-card';
+            
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = '照片';
+            
+            // 图片加载成功
+            img.onload = () => {
+                log('图片加载成功:', imageUrl);
+            };
+
+            // 图片加载失败
+            img.onerror = () => {
+                log('图片加载失败:', imageUrl);
+                img.src = 'https://via.placeholder.com/300x200?text=加载失败';
+            };
+            
+            photoCard.appendChild(img);
+            gallery.insertBefore(photoCard, gallery.firstChild);
+
+            // 保存到本地存储
+            try {
+                const urls = JSON.parse(localStorage.getItem('photoUrls') || '[]');
+                urls.unshift(imageUrl);
+                localStorage.setItem('photoUrls', JSON.stringify(urls));
+                log('保存到本地存储成功');
+            } catch (error) {
+                log('保存到本地存储失败:', error);
             }
         }
 
         // 加载保存的照片
         function loadSavedPhotos() {
-            const urls = JSON.parse(localStorage.getItem('photoUrls') || '[]');
-            urls.forEach(url => {
-                const photoCard = document.createElement('div');
-                photoCard.className = 'photo-card';
-                
-                const img = document.createElement('img');
-                img.src = url;
-                img.alt = '照片';
-                
-                photoCard.appendChild(img);
-                document.getElementById('gallery').appendChild(photoCard);
-            });
+            try {
+                const urls = JSON.parse(localStorage.getItem('photoUrls') || '[]');
+                log('加载保存的照片:', urls);
+                urls.forEach(url => addPhotoToGallery(url));
+            } catch (error) {
+                log('加载保存的照片失败:', error);
+            }
         }
 
         // 事件监听
