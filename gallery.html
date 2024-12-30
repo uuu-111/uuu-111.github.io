@@ -5,13 +5,83 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>傻球球笨多乐的相册</title>
     <style>
-        /* 保持原有样式不变 */
+        /* 保持之前的所有样式 */
+        body {
+            background: #f5f7fa;
+            font-family: 'Arial', sans-serif;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .header {
+            background: linear-gradient(45deg, #ff69b4, #ff8da1);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        #uploadBtn {
+            background: #ff69b4;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 15px;
+        }
+
+        #uploadBtn:hover {
+            background: #ff4d94;
+            transform: translateY(-2px);
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 10px;
+        }
+
+        .photo-card {
+            background: white;
+            padding: 10px;
+            border-radius: 15px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .photo-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 10px;
+        }
+
+        #status {
+            color: #ff69b4;
+            margin: 10px 0;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>✨ 傻球球笨多乐的相册 ✨</h1>
-        <input type="file" id="fileInput" accept="image/*" style="display: none">
+        <input type="file" id="fileInput" accept="image/*" multiple style="display: none">
         <button id="uploadBtn">添加新照片</button>
         <div id="status"></div>
     </div>
@@ -20,40 +90,12 @@
 
     <script>
         const API_KEY = '039303a80a219679c951ccf37548704f';
-        const STORAGE_KEY = 'photoGallery_v2';
 
-        // 添加照片到画廊
-        function addPhotoToGallery(photoData) {
-            const gallery = document.getElementById('gallery');
-            const photoCard = document.createElement('div');
-            photoCard.className = 'photo-card';
-            
-            const img = document.createElement('img');
-            img.src = photoData.display_url; // 使用 display_url
-            img.alt = '照片';
-            
-            photoCard.appendChild(img);
-            gallery.insertBefore(photoCard, gallery.firstChild);
-        }
-
-        // 保存照片数据
-        function savePhotoData(photoData) {
-            // 从 sessionStorage 获取现有照片
-            let photos = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]');
-            
-            // 检查是否已存在相同的照片
-            if (!photos.some(p => p.display_url === photoData.display_url)) {
-                photos.unshift(photoData);
-                // 保存到 sessionStorage
-                sessionStorage.setItem(STORAGE_KEY, JSON.stringify(photos));
-            }
-        }
-
-        // 上传照片
+        // 上传照片到 ImgBB
         async function uploadPhoto(file) {
             const status = document.getElementById('status');
             status.textContent = '上传中...';
-            
+
             const formData = new FormData();
             formData.append('image', file);
 
@@ -64,18 +106,17 @@
                 });
 
                 const data = await response.json();
-                console.log('Upload response:', data);
+                console.log('ImgBB response:', data);
 
                 if (data.success) {
-                    const photoData = {
-                        display_url: data.data.display_url,
-                        delete_url: data.data.delete_url,
-                        timestamp: new Date().toISOString()
-                    };
-
-                    addPhotoToGallery(photoData);
-                    savePhotoData(photoData);
+                    // 使用 display_url
+                    const imageUrl = data.data.display_url;
+                    addPhotoToGallery(imageUrl);
+                    savePhotoUrl(imageUrl);
                     status.textContent = '上传成功！';
+                    
+                    // 打印成功信息到控制台
+                    console.log('Upload successful:', imageUrl);
                 } else {
                     throw new Error('上传失败');
                 }
@@ -85,15 +126,35 @@
             }
         }
 
+        // 添加照片到画廊
+        function addPhotoToGallery(imageUrl) {
+            const gallery = document.getElementById('gallery');
+            const photoCard = document.createElement('div');
+            photoCard.className = 'photo-card';
+            
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.alt = '照片';
+            
+            photoCard.appendChild(img);
+            gallery.insertBefore(photoCard, gallery.firstChild);
+        }
+
+        // 保存照片URL到本地存储
+        function savePhotoUrl(imageUrl) {
+            const urls = JSON.parse(localStorage.getItem('photoUrls') || '[]');
+            if (!urls.includes(imageUrl)) {
+                urls.unshift(imageUrl);
+                localStorage.setItem('photoUrls', JSON.stringify(urls));
+                console.log('Saved URLs:', urls); // 打印保存的URLs
+            }
+        }
+
         // 加载保存的照片
         function loadSavedPhotos() {
-            const photos = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]');
-            const gallery = document.getElementById('gallery');
-            gallery.innerHTML = ''; // 清空现有内容
-            
-            // 按时间倒序显示照片
-            photos.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            photos.forEach(photo => addPhotoToGallery(photo));
+            const urls = JSON.parse(localStorage.getItem('photoUrls') || '[]');
+            console.log('Loading saved photos:', urls); // 打印加载的URLs
+            urls.forEach(url => addPhotoToGallery(url));
         }
 
         // 事件监听
@@ -106,24 +167,8 @@
             files.forEach(file => uploadPhoto(file));
         });
 
-        // 页面加载时显示照片
+        // 页面加载时显示保存的照片
         window.addEventListener('load', loadSavedPhotos);
-
-        // 定期保存到 localStorage 以防数据丢失
-        setInterval(() => {
-            const photos = JSON.parse(sessionStorage.getItem(STORAGE_KEY) || '[]');
-            if (photos.length > 0) {
-                localStorage.setItem(STORAGE_KEY, JSON.stringify(photos));
-            }
-        }, 5000);
-
-        // 页面加载时从 localStorage 恢复数据
-        if (!sessionStorage.getItem(STORAGE_KEY)) {
-            const savedPhotos = localStorage.getItem(STORAGE_KEY);
-            if (savedPhotos) {
-                sessionStorage.setItem(STORAGE_KEY, savedPhotos);
-            }
-        }
     </script>
 </body>
 </html>
