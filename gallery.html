@@ -50,6 +50,12 @@
             object-fit: cover;
             border-radius: 10px;
         }
+
+        #status {
+            color: #ff69b4;
+            text-align: center;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -57,12 +63,19 @@
         <h1>✨ 傻球球笨多乐的相册 ✨</h1>
         <input type="file" id="fileInput" accept="image/*" style="display: none">
         <button id="uploadBtn">添加新照片</button>
+        <div id="status"></div>
     </div>
 
     <div class="gallery" id="gallery"></div>
 
     <script>
         const API_KEY = '039303a80a219679c951ccf37548704f';
+
+        // 清除所有保存的照片
+        function clearPhotos() {
+            localStorage.removeItem('photoUrls');
+            document.getElementById('gallery').innerHTML = '';
+        }
 
         // 添加照片到画廊
         function addPhotoToGallery(imageUrl) {
@@ -89,6 +102,8 @@
 
         // 上传照片
         async function uploadPhoto(file) {
+            document.getElementById('status').textContent = '上传中...';
+            
             const formData = new FormData();
             formData.append('image', file);
 
@@ -99,14 +114,20 @@
                 });
 
                 const data = await response.json();
+                console.log('ImgBB response:', data); // 查看返回数据
+
                 if (data.success) {
-                    const imageUrl = data.data.url;
+                    // 使用 display_url
+                    const imageUrl = data.data.display_url;
                     addPhotoToGallery(imageUrl);
                     savePhotoUrl(imageUrl);
+                    document.getElementById('status').textContent = '上传成功！';
+                } else {
+                    throw new Error('上传失败');
                 }
             } catch (error) {
                 console.error('Upload error:', error);
-                alert('上传失败，请重试');
+                document.getElementById('status').textContent = '上传失败，请重试';
             }
         }
 
@@ -129,8 +150,15 @@
             }
         });
 
-        // 页面加载时显示照片
-        window.addEventListener('load', loadSavedPhotos);
+        // 先清除旧数据，然后重新开始
+        clearPhotos();
+
+        // 添加快捷键清除所有照片（用于测试）
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'x') {
+                clearPhotos();
+            }
+        });
     </script>
 </body>
 </html>
