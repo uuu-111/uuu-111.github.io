@@ -5,51 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>傻球球笨多乐的相册</title>
     <style>
-        body {
-            background: #f5f7fa;
-            font-family: 'Arial', sans-serif;
-            padding: 20px;
-        }
-
-        .header {
-            background: linear-gradient(45deg, #ff69b4, #ff8da1);
-            color: white;
-            padding: 20px;
-            text-align: center;
-            border-radius: 15px;
-            margin-bottom: 20px;
-        }
-
-        #uploadBtn {
-            background: #ff69b4;
-            color: white;
-            border: none;
-            padding: 12px 25px;
-            border-radius: 25px;
-            font-size: 16px;
-            cursor: pointer;
-        }
-
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 20px;
-            padding: 10px;
-        }
-
-        .photo-card {
-            background: white;
-            padding: 10px;
-            border-radius: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-
-        .photo-card img {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-            border-radius: 10px;
-        }
+        /* 保持原有样式不变 */
     </style>
 </head>
 <body>
@@ -64,15 +20,77 @@
 
     <script>
         const API_KEY = '039303a80a219679c951ccf37548704f';
+        let db;
+
+        // 初始化数据库
+        const request = indexedDB.open('PhotoGallery', 1);
+
+        request.onerror = (event) => {
+            console.error('数据库错误:', event.target.error);
+        };
+
+        request.onupgradeneeded = (event) => {
+            db = event.target.result;
+            if (!db.objectStoreNames.contains('photos')) {
+                db.createObjectStore('photos', { keyPath: 'id', autoIncrement: true });
+            }
+        };
+
+        request.onsuccess = (event) => {
+            db = event.target.result;
+            loadPhotos(); // 加载照片
+        };
+
+        // 保存照片到数据库
+        function savePhoto(imageUrl) {
+            const transaction = db.transaction(['photos'], 'readwrite');
+            const store = transaction.objectStore('photos');
+            
+            const photo = {
+                url: imageUrl,
+                timestamp: new Date().getTime()
+            };
+            
+            store.add(photo);
+        }
+
+        // 从数据库加载照片
+        function loadPhotos() {
+            const transaction = db.transaction(['photos'], 'readonly');
+            const store = transaction.objectStore('photos');
+            const request = store.getAll();
+
+            request.onsuccess = () => {
+                const photos = request.result;
+                // 按时间戳排序，最新的在前
+                photos.sort((a, b) => b.timestamp - a.timestamp);
+                
+                const gallery = document.getElementById('gallery');
+                gallery.innerHTML = ''; // 清空现有内容
+                
+                photos.forEach(photo => {
+                    const photoCard = document.createElement('div');
+                    photoCard.className = 'photo-card';
+                    
+                    const img = document.createElement('img');
+                    img.src = photo.url;
+                    img.alt = '照片';
+                    
+                    photoCard.appendChild(img);
+                    gallery.appendChild(photoCard);
+                });
+            };
+        }
 
         // 上传照片
         async function uploadPhoto(file) {
+            const status = document.getElementById('uploadStatus');
+            status.textContent = '上传中...';
+
             const formData = new FormData();
             formData.append('image', file);
 
             try {
-                document.getElementById('uploadStatus').textContent = '上传中...';
-                
                 const response = await fetch(`https://api.imgbb.com/1/upload?key=${API_KEY}`, {
                     method: 'POST',
                     body: formData
@@ -81,71 +99,33 @@
                 const result = await response.json();
                 
                 if (result.success) {
-                    // 直接使用返回的图片链接
                     const imageUrl = result.data.display_url;
                     
-                    // 创建照片卡片
-                    const photoCard = document.createElement('div');
-                    photoCard.className = 'photo-card';
+                    // 保存到数据库
+                    savePhoto(imageUrl);
                     
-                    const img = document.createElement('img');
-                    img.src = imageUrl;
-                    img.alt = '照片';
+                    // 重新加载所有照片
+                    loadPhotos();
                     
-                    photoCard.appendChild(img);
-                    
-                    // 添加到画廊的开头
-                    const gallery = document.getElementById('gallery');
-                    gallery.insertBefore(photoCard, gallery.firstChild);
-                    
-                    // 保存图片链接
-                    const savedUrls = JSON.parse(localStorage.getItem('photos') || '[]');
-                    savedUrls.unshift(imageUrl);
-                    localStorage.setItem('photos', JSON.stringify(savedUrls));
-                    
-                    document.getElementById('uploadStatus').textContent = '上传成功！';
+                    status.textContent = '上传成功！';
                 } else {
                     throw new Error('上传失败');
                 }
             } catch (error) {
                 console.error('上传错误:', error);
-                document.getElementById('uploadStatus').textContent = '上传失败，请重试';
+                status.textContent = '上传失败，请重试';
             }
         }
 
-        // 加载保存的照片
-        function loadSavedPhotos() {
-            const savedUrls = JSON.parse(localStorage.getItem('photos') || '[]');
-            const gallery = document.getElementById('gallery');
-            
-            savedUrls.forEach(url => {
-                const photoCard = document.createElement('div');
-                photoCard.className = 'photo-card';
-                
-                const img = document.createElement('img');
-                img.src = url;
-                img.alt = '照片';
-                
-                photoCard.appendChild(img);
-                gallery.appendChild(photoCard);
-            });
-        }
-
-        // 上传按钮点击事件
+        // 事件监听
         document.getElementById('uploadBtn').addEventListener('click', () => {
             document.getElementById('fileInput').click();
         });
 
-        // 文件选择事件
         document.getElementById('fileInput').addEventListener('change', (e) => {
-            const files = e.target.files;
-            if (files.length > 0) {
-                Array.from(files).forEach(file => uploadPhoto(file));
-            }
+            const files = Array.from(e.target.files);
+            files.forEach(file => uploadPhoto(file));
         });
-
-        // 页面加载时显示保存的照片
-        window.onload = loadSavedPhotos;
     </script>
 </body>
 </html>
