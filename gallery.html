@@ -2,10 +2,27 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>傻球球笨多乐的相册</title>
     <style>
-        /* ... 保持原有样式 ... */
-        
+        body {
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Arial', sans-serif;
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(45deg, #ff69b4, #ff8da1);
+            color: white;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
         .admin-panel {
             display: none;
             text-align: center;
@@ -21,6 +38,58 @@
             text-align: center;
             margin: 20px;
             color: #ff69b4;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 25px;
+            padding: 20px;
+        }
+
+        .photo-card {
+            background: white;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            position: relative;
+            transition: transform 0.3s ease;
+            overflow: hidden;
+        }
+
+        .photo-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .photo-card img {
+            width: 100%;
+            height: 250px;
+            object-fit: cover;
+            border-radius: 10px;
+            transition: transform 0.3s ease;
+        }
+
+        .photo-card:hover img {
+            transform: scale(1.05);
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: none;
+            z-index: 2;
+        }
+
+        .photo-card:hover .delete-btn {
+            display: block;
         }
 
         #uploadBtn {
@@ -39,26 +108,20 @@
             box-shadow: 0 5px 15px rgba(255,105,180,0.4);
         }
 
-        .photo-card {
-            position: relative;
-        }
-
-        .delete-btn {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            background: rgba(255, 0, 0, 0.7);
+        .admin-btn {
+            background: #ff69b4;
             color: white;
             border: none;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
+            padding: 10px 20px;
+            border-radius: 20px;
             cursor: pointer;
-            display: none;
+            margin: 10px;
+            transition: all 0.3s ease;
         }
 
-        .photo-card:hover .delete-btn {
-            display: block;
+        .admin-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(255,105,180,0.4);
         }
     </style>
 </head>
@@ -80,7 +143,7 @@
 
     <script>
         const ADMIN_PASSWORD = '2qq666'; // 修改为你想要的管理员密码
-        const IMGBB_API_KEY = '你的ImgBB_API_KEY'; // 替换为你的 ImgBB API Key
+        const IMGBB_API_KEY = '039303a80a219679c951ccf37548704f'; // 已更新为你的 API Key
         
         // 从 localStorage 加载照片
         function loadPhotos() {
