@@ -12,11 +12,12 @@
         }
 
         body {
-            background: url('1.png') no-repeat center center fixed;
-            -webkit-background-size: cover;
-            -moz-background-size: cover;
-            -o-background-size: cover;
+            /* 背景图片设置 */
+            background: linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), url('1.png');
+            background-position: center center;
+            background-repeat: no-repeat;
             background-size: cover;
+            background-attachment: fixed;
             min-height: 100vh;
             display: flex;
             justify-content: center;
@@ -24,6 +25,15 @@
             font-family: 'Arial', sans-serif;
             position: relative;
             overflow: hidden;
+        }
+
+        /* 移动端背景图优化 */
+        @media (max-width: 768px) {
+            body {
+                background-attachment: scroll;
+                background-position: center center;
+                background-size: cover;
+            }
         }
 
         /* 雪花容器 */
@@ -60,13 +70,11 @@
             border-radius: 20px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
             backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
             width: 90%;
             max-width: 400px;
             text-align: center;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
+            position: relative;
             z-index: 2;
             border: 1px solid rgba(255, 255, 255, 0.5);
         }
@@ -119,14 +127,9 @@
 
         /* 移动端适配 */
         @media (max-width: 768px) {
-            body {
-                background-attachment: scroll;
-                background-position: center center;
-            }
-
             .login-container {
                 padding: 30px;
-                width: 85%;
+                margin: 20px;
             }
 
             h1 {
@@ -202,8 +205,22 @@
 
         // 确保背景图片加载
         window.onload = function() {
-            document.body.style.backgroundImage = "url('1.png')";
+            // 预加载背景图片
+            const img = new Image();
+            img.src = '1.png';
+            img.onload = function() {
+                document.body.style.visibility = 'visible';
+            };
         }
+
+        // 处理移动端 100vh 问题
+        function setVH() {
+            let vh = window.innerHeight * 0.01;
+            document.documentElement.style.setProperty('--vh', `${vh}px`);
+        }
+        
+        setVH();
+        window.addEventListener('resize', setVH);
     </script>
 </body>
 </html>
