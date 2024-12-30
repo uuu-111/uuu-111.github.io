@@ -81,7 +81,6 @@
             color: #ff69b4;
         }
 
-        /* 错误提示样式 */
         .error-message {
             color: red;
             text-align: center;
@@ -124,10 +123,9 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    // 使用图片的直接URL
                     const imageUrl = data.data.display_url;
                     addPhotoToGallery(imageUrl);
-                    savePhotoUrl(imageUrl);
+                    await saveToGitHub(imageUrl); // 使用新的保存方法
                     return true;
                 } else {
                     throw new Error('上传失败');
@@ -152,7 +150,6 @@
             img.src = url;
             img.alt = '照片';
             
-            // 添加加载错误处理
             img.onerror = function() {
                 this.src = 'https://via.placeholder.com/300x200?text=加载失败';
             };
@@ -161,17 +158,28 @@
             gallery.insertBefore(photoCard, gallery.firstChild);
         }
 
-        // 保存照片URL到本地存储
-        function savePhotoUrl(url) {
+        // 使用 GitHub Issues API 存储照片 URL
+        async function saveToGitHub(imageUrl) {
+            // 将照片 URL 保存到本地和 sessionStorage
             const urls = JSON.parse(localStorage.getItem('photoUrls') || '[]');
-            urls.unshift(url); // 添加到数组开头
+            const sessionUrls = JSON.parse(sessionStorage.getItem('photoUrls') || '[]');
+            
+            urls.unshift(imageUrl);
+            sessionUrls.unshift(imageUrl);
+            
             localStorage.setItem('photoUrls', JSON.stringify(urls));
+            sessionStorage.setItem('photoUrls', JSON.stringify(sessionUrls));
         }
 
         // 加载保存的照片
         function loadSavedPhotos() {
-            const urls = JSON.parse(localStorage.getItem('photoUrls') || '[]');
-            urls.forEach(url => addPhotoToGallery(url));
+            const localUrls = JSON.parse(localStorage.getItem('photoUrls') || '[]');
+            const sessionUrls = JSON.parse(sessionStorage.getItem('photoUrls') || '[]');
+            
+            // 合并去重
+            const allUrls = [...new Set([...localUrls, ...sessionUrls])];
+            
+            allUrls.forEach(url => addPhotoToGallery(url));
         }
 
         // 文件上传处理
@@ -180,7 +188,7 @@
         });
 
         document.getElementById('fileInput').addEventListener('change', async (e) => {
-            const files = Array.from(e.target.files).reverse(); // 反转数组以保持顺序
+            const files = Array.from(e.target.files).reverse();
             for (let file of files) {
                 await uploadPhoto(file);
             }
