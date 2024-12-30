@@ -4,78 +4,23 @@
     <meta charset="UTF-8">
     <title>傻球球笨多乐的相册</title>
     <style>
-        body {
-            margin: 0;
-            padding: 20px;
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
-            font-family: 'Arial', sans-serif;
-            min-height: 100vh;
-        }
-
-        .header {
-            text-align: center;
-            padding: 30px;
-            background: linear-gradient(45deg, #ff69b4, #ff8da1);
-            color: white;
-            border-radius: 15px;
-            margin-bottom: 30px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .upload-section {
+        /* ... 保持原有样式 ... */
+        
+        .admin-panel {
+            display: none;
             text-align: center;
             margin: 20px 0;
-            padding: 30px;
-            background: white;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-        }
-
-        .gallery {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 25px;
             padding: 20px;
-        }
-
-        .photo-card {
             background: white;
-            padding: 15px;
             border-radius: 15px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            position: relative;
-            transition: transform 0.3s ease;
         }
 
-        .photo-card:hover {
-            transform: translateY(-5px);
-        }
-
-        .photo-card img {
-            width: 100%;
-            height: 250px;
-            object-fit: cover;
-            border-radius: 10px;
-        }
-
-        .delete-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 0, 0, 0.8);
-            color: white;
-            border: none;
-            border-radius: 50%;
-            width: 35px;
-            height: 35px;
-            cursor: pointer;
-            font-size: 18px;
-            opacity: 0;
-            transition: opacity 0.3s;
-        }
-
-        .photo-card:hover .delete-btn {
-            opacity: 1;
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px;
+            color: #ff69b4;
         }
 
         #uploadBtn {
@@ -93,53 +38,139 @@
             transform: translateY(-3px);
             box-shadow: 0 5px 15px rgba(255,105,180,0.4);
         }
+
+        .photo-card {
+            position: relative;
+        }
+
+        .delete-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(255, 0, 0, 0.7);
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: none;
+        }
+
+        .photo-card:hover .delete-btn {
+            display: block;
+        }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>✨ 傻球球笨多乐的相册 ✨</h1>
-        <p>记录美好时刻</p>
+        <button onclick="showAdminLogin()" class="admin-btn">管理员入口</button>
     </div>
 
-    <div class="upload-section">
+    <div id="adminPanel" class="admin-panel">
         <input type="file" id="fileInput" accept="image/*" multiple style="display: none">
         <button id="uploadBtn">添加新照片</button>
+        <div id="loading" class="loading">上传中...</div>
     </div>
 
     <div class="gallery" id="gallery">
-        <!-- 照片将在这里动态添加 -->
+        <!-- 照片将在这里显示 -->
     </div>
 
     <script>
-        document.getElementById('uploadBtn').addEventListener('click', function() {
-            document.getElementById('fileInput').click();
-        });
+        const ADMIN_PASSWORD = '2qq666'; // 修改为你想要的管理员密码
+        const IMGBB_API_KEY = '你的ImgBB_API_KEY'; // 替换为你的 ImgBB API Key
+        
+        // 从 localStorage 加载照片
+        function loadPhotos() {
+            const gallery = document.getElementById('gallery');
+            const photos = JSON.parse(localStorage.getItem('photos') || '[]');
+            
+            gallery.innerHTML = '';
+            photos.forEach(photo => {
+                addPhotoToGallery(photo.url, photo.id);
+            });
+        }
 
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const files = e.target.files;
-            for(let file of files) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    addPhotoToGallery(e.target.result);
-                }
-                reader.readAsDataURL(file);
-            }
-        });
-
-        function addPhotoToGallery(imgSrc) {
+        // 添加照片到画廊
+        function addPhotoToGallery(url, id) {
             const gallery = document.getElementById('gallery');
             const photoCard = document.createElement('div');
             photoCard.className = 'photo-card';
-            
-            const date = new Date();
-            const dateStr = date.toLocaleDateString();
-            
             photoCard.innerHTML = `
-                <img src="${imgSrc}" alt="照片">
-                <button class="delete-btn" onclick="this.parentElement.remove()">×</button>
+                <img src="${url}" alt="照片">
+                <button class="delete-btn" onclick="deletePhoto('${id}')">×</button>
             `;
             gallery.appendChild(photoCard);
         }
+
+        // 上传照片到 ImgBB
+        async function uploadToImgBB(file) {
+            const formData = new FormData();
+            formData.append('image', file);
+
+            try {
+                const response = await fetch(`https://api.imgbb.com/1/upload?key=${IMGBB_API_KEY}`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                
+                if (data.success) {
+                    const photos = JSON.parse(localStorage.getItem('photos') || '[]');
+                    photos.push({
+                        url: data.data.url,
+                        id: data.data.id
+                    });
+                    localStorage.setItem('photos', JSON.stringify(photos));
+                    addPhotoToGallery(data.data.url, data.data.id);
+                }
+            } catch (error) {
+                console.error('Upload failed:', error);
+                alert('上传失败，请重试');
+            }
+        }
+
+        // 删除照片
+        function deletePhoto(id) {
+            if (confirm('确定要删除这张照片吗？')) {
+                const photos = JSON.parse(localStorage.getItem('photos') || '[]');
+                const newPhotos = photos.filter(photo => photo.id !== id);
+                localStorage.setItem('photos', JSON.stringify(newPhotos));
+                loadPhotos();
+            }
+        }
+
+        // 显示管理员登录
+        function showAdminLogin() {
+            const password = prompt('请输入管理员密码：');
+            if (password === ADMIN_PASSWORD) {
+                document.getElementById('adminPanel').style.display = 'block';
+                alert('登录成功！现在可以管理照片了。');
+            } else {
+                alert('密码错误！');
+            }
+        }
+
+        // 文件上传处理
+        document.getElementById('uploadBtn').addEventListener('click', () => {
+            document.getElementById('fileInput').click();
+        });
+
+        document.getElementById('fileInput').addEventListener('change', async (e) => {
+            const files = e.target.files;
+            document.getElementById('loading').style.display = 'block';
+            
+            for (let file of files) {
+                await uploadToImgBB(file);
+            }
+            
+            document.getElementById('loading').style.display = 'none';
+        });
+
+        // 页面加载时显示照片
+        window.onload = loadPhotos;
     </script>
 </body>
 </html>
